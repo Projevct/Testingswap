@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Thor Swap - Secure NFT Trading Platform",
+  title: "Grail Swap - Secure NFT Trading Platform",
   description: "Use our peer-to-peer program to trade and swap chain tokens securely.",
     generator: 'v0.dev'
 }

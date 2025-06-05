@@ -1,5 +1,4 @@
 "use client"
-import { generateTradeId } from "@/lib/utils"
 
 export type TokenItem = {
   id: number
@@ -32,9 +31,6 @@ export type Trade = {
   updatedAt: number
 }
 
-// In a real application, this would be stored in a database
-const trades: Trade[] = []
-
 export async function createTrade(
   creatorWallet: string,
   counterpartyWallet: string,
@@ -42,35 +38,26 @@ export async function createTrade(
   counterpartyOffer: TradeOffer,
 ): Promise<Trade> {
   try {
-    // In a real application, this would involve blockchain transactions
-    // For now, we'll simulate the process
+    const response = await fetch("/api/trade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        creatorWallet,
+        counterpartyWallet,
+        creatorOffer,
+        counterpartyOffer,
+      }),
+    })
 
-    // Validate inputs
-    if (!creatorWallet) throw new Error("Creator wallet is required")
-    if (!counterpartyWallet) throw new Error("Counterparty wallet is required")
-    if (creatorOffer.tokens.length === 0 && creatorOffer.nfts.length === 0 && creatorOffer.solAmount === 0) {
-      throw new Error("Creator offer cannot be empty")
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to create trade")
     }
 
-    // Create trade object
-    const trade: Trade = {
-      id: generateTradeId(),
-      creatorWallet,
-      counterpartyWallet,
-      creatorOffer,
-      counterpartyOffer,
-      status: "pending",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }
-
-    // In a real app, we would store this in a database
-    trades.push(trade)
-
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    return trade
+    return data.trade
   } catch (error) {
     console.error("Error creating trade:", error)
     throw error
@@ -78,49 +65,79 @@ export async function createTrade(
 }
 
 export async function getTrade(id: string): Promise<Trade | undefined> {
-  // In a real app, we would fetch this from a database
-  return trades.find((trade) => trade.id === id)
+  try {
+    const response = await fetch(`/api/trade/${id}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch trade")
+    }
+
+    return data.trade
+  } catch (error) {
+    console.error("Error fetching trade:", error)
+    return undefined
+  }
 }
 
 export async function getTradesByWallet(walletAddress: string): Promise<Trade[]> {
-  // In a real app, we would fetch this from a database
-  return trades.filter((trade) => trade.creatorWallet === walletAddress || trade.counterpartyWallet === walletAddress)
+  try {
+    const response = await fetch(`/api/trades?wallet=${encodeURIComponent(walletAddress)}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch trades")
+    }
+
+    return data.trades || []
+  } catch (error) {
+    console.error("Error fetching trades:", error)
+    return []
+  }
 }
 
 export async function acceptTrade(id: string, walletAddress: string): Promise<Trade> {
-  const trade = trades.find((t) => t.id === id)
-  if (!trade) throw new Error("Trade not found")
+  try {
+    const response = await fetch(`/api/trade/${id}/accept`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ walletAddress }),
+    })
 
-  if (trade.counterpartyWallet !== walletAddress) {
-    throw new Error("Only the counterparty can accept this trade")
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to accept trade")
+    }
+
+    return data.trade
+  } catch (error) {
+    console.error("Error accepting trade:", error)
+    throw error
   }
-
-  if (trade.status !== "pending") {
-    throw new Error(`Trade cannot be accepted in ${trade.status} state`)
-  }
-
-  // In a real app, this would involve blockchain transactions
-  // For now, we'll simulate the process
-  trade.status = "accepted"
-  trade.updatedAt = Date.now()
-
-  return trade
 }
 
 export async function rejectTrade(id: string, walletAddress: string): Promise<Trade> {
-  const trade = trades.find((t) => t.id === id)
-  if (!trade) throw new Error("Trade not found")
+  try {
+    const response = await fetch(`/api/trade/${id}/reject`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ walletAddress }),
+    })
 
-  if (trade.counterpartyWallet !== walletAddress && trade.creatorWallet !== walletAddress) {
-    throw new Error("Only the trade participants can reject this trade")
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to reject trade")
+    }
+
+    return data.trade
+  } catch (error) {
+    console.error("Error rejecting trade:", error)
+    throw error
   }
-
-  if (trade.status !== "pending") {
-    throw new Error(`Trade cannot be rejected in ${trade.status} state`)
-  }
-
-  trade.status = "rejected"
-  trade.updatedAt = Date.now()
-
-  return trade
 }
